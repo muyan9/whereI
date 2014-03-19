@@ -1,0 +1,88 @@
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8">
+<style>body{margin:0px 0px 0px 0px;}</style>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=bsZO4TiUVZ7oEXH6vWRK4ycw"></script>
+<script type="text/javascript">
+var map = null;
+var markerTarget = null;
+var labelTarget = null;
+var markerPosition = null;
+var labelPosition = null;
+var circle = null;
+var defaultCenter = new BMap.Point(126.651, 45.763);
+var sizeIcon = new BMap.Size(20,31);
+var iconPosition = new BMap.Icon("red.png", sizeIcon, {anchor:new BMap.Size(10,30)});
+var iconTarget = new BMap.Icon("blue.png", sizeIcon, {anchor:sizeIcon});
+
+function initialize() {
+    map = new BMap.Map('divMap');
+    map.centerAndZoom(defaultCenter, 13);
+
+    map.addControl(new BMap.NavigationControl());
+    map.enableScrollWheelZoom();
+    map.enableDoubleClickZoom();
+    map.addEventListener("click", function(e){
+        createTargetMarker(e.point.lng, e.point.lat);
+    });
+}
+
+function setMapCenter(lng, lat) {
+    map.setCenter(new BMap.Point(lng, lat));
+}
+
+function setTargetPosition() {
+    if(markerTarget) {
+        var p = markerTarget.getPosition();
+        test.setTargetPosition(p.lng, p.lat);
+    }
+}
+
+function myPosition(lng, lat, radius){
+    var point = new BMap.Point(lng, lat);
+    if (markerPosition){
+        map.removeOverlay(markerPosition);
+    }
+    markerPosition = new BMap.Marker(point,{icon:iconPosition});
+    map.addOverlay(markerPosition);
+    //map.setCenter(point);
+    if(labelPosition)
+        map.removeOverlay(labelPosition);
+
+    labelPosition = new BMap.Label("我的位置",{position:point, offset:new BMap.Size(-26,-50)});
+    map.addOverlay(labelPosition);
+    if (radius){
+        if (circle){
+            map.removeOverlay(circle);
+        }
+        circle = new BMap.Circle(point, radius, {strokeColor:"red", strokeWeight:1, strokeOpacity:1, fillOpacity:0.3, strokeStyle:"dashed"});
+        map.addOverlay(circle);
+    }
+}
+
+function createTargetMarker(lng, lat){
+    var point = new BMap.Point(lng, lat);
+    if (markerTarget){
+        map.removeOverlay(markerTarget);
+    }
+    markerTarget = new BMap.Marker(point,{icon:iconTarget});
+    //markerTarget.enableDragging();
+    markerTarget.addEventListener("dragging", function(e){
+        labelTarget.setPosition(this.getPosition());
+    });
+    map.addOverlay(markerTarget);
+    if(labelTarget)
+        map.removeOverlay(labelTarget);
+
+    labelTarget = new BMap.Label("目的地",{position:point, offset:new BMap.Size(-30,-50)});
+    labelTarget.setStyle({color:"blue"});
+    map.addOverlay(labelTarget);
+
+    setTargetPosition();
+}
+</script>
+</head>
+<body onload="initialize('北京', 13)">
+<div id="divMap" style="width:100%;height:100%"></div>
+</body>
+</html>
