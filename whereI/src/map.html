@@ -5,15 +5,17 @@
 <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=bsZO4TiUVZ7oEXH6vWRK4ycw"></script>
 <script type="text/javascript">
 var map = null;
-var markerTarget = null;
-var labelTarget = null;
-var markerPosition = null;
-var labelPosition = null;
-var circle = null;
-var defaultCenter = new BMap.Point(126.651, 45.763);
-var sizeIcon = new BMap.Size(20,31);
-var iconPosition = new BMap.Icon("red.png", sizeIcon, {anchor:new BMap.Size(10,30)});
-var iconTarget = new BMap.Icon("blue.png", sizeIcon, {anchor:sizeIcon});
+var markerTarget = null;                //目标地点marker
+var labelTarget = null;                 //目标地点label
+var markerPosition = null;              //当前坐标marker
+var labelPosition = null;               //当前坐标label
+var infoWindow = null;                  //当前坐标info窗口
+var circlePositionPrecision = null;     //当前坐标定位精度圈
+var circleAlarmPrecision = null;        //目标地点提醒区域圈
+var defaultCenter = new BMap.Point(126.651, 45.763);    //默认地图中心坐标
+var sizeIcon = new BMap.Size(20,31);    //坐标点尺寸
+var iconPosition = new BMap.Icon("red.png", sizeIcon, {anchor:new BMap.Size(10,30)});   //当前坐标图标
+var iconTarget = new BMap.Icon("blue.png", sizeIcon, {anchor:sizeIcon});                //目标地点图标
 
 function initialize() {
     map = new BMap.Map('divMap');
@@ -31,6 +33,7 @@ function setMapCenter(lng, lat) {
     map.setCenter(new BMap.Point(lng, lat));
 }
 
+//通知webview当前选中的坐标点
 function setTargetPosition() {
     if(markerTarget) {
         var p = markerTarget.getPosition();
@@ -38,6 +41,7 @@ function setTargetPosition() {
     }
 }
 
+//在地图上标记当前坐标位置
 function myPosition(lng, lat, radius){
     var point = new BMap.Point(lng, lat);
     if (markerPosition){
@@ -52,15 +56,40 @@ function myPosition(lng, lat, radius){
     labelPosition = new BMap.Label("我的位置",{position:point, offset:new BMap.Size(-26,-50)});
     map.addOverlay(labelPosition);
     if (radius){
-        if (circle){
-            map.removeOverlay(circle);
+        if (circlePositionPrecision){
+            map.removeOverlay(circlePositionPrecision);
         }
-        circle = new BMap.Circle(point, radius, {strokeColor:"red", strokeWeight:1, strokeOpacity:1, fillOpacity:0.3, strokeStyle:"dashed"});
-        map.addOverlay(circle);
+        circlePositionPrecision = new BMap.Circle(point, radius, {strokeColor:"red", strokeWeight:1, strokeOpacity:1, fillOpacity:0.3, strokeStyle:"dashed"});
+        map.addOverlay(circlePositionPrecision);
     }
+
+    var opts = {
+        width : 250,     // 信息窗口宽度
+        height: 100,     // 信息窗口高度
+        title : "info",  // 信息窗口标题
+        offset : new BMap.Size(10, -30)
+    }
+
+    var lng1 = markerTarget.getPosition().lng;
+    var lat1 = markerTarget.getPosition().lat;
+    var lng2 = markerPosition.getPosition().lng;
+    var lat2 = markerPosition.getPosition().lat;
+
+    var d = getDistance(lng1, lat1, lng2, lat2);
+
+    if (infoWindow){
+        infoWindow.close();
+        map.removeOverlay(infoWindow);
+    }
+    var t = "定位精度：" + radius + "米<br>";
+    t = t + "与目标点距离：" + d + "米<br>";
+
+    infoWindow = new BMap.InfoWindow(t, opts);  // 创建信息窗口对象
+    map.openInfoWindow(infoWindow, point);      // 打开信息窗口
 }
 
-function createTargetMarker(lng, lat){
+//在地图上标记选定的目标地点
+function createTargetMarker(lng, lat, radius){
     var point = new BMap.Point(lng, lat);
     if (markerTarget){
         map.removeOverlay(markerTarget);
@@ -78,7 +107,61 @@ function createTargetMarker(lng, lat){
     labelTarget.setStyle({color:"blue"});
     map.addOverlay(labelTarget);
 
+    if(radius){
+        if (circleAlarmPrecision){
+            map.removeOverlay(circleAlarmPrecision);
+        }
+        circleAlarmPrecision = new BMap.Circle(point, radius, {strokeColor:"green", strokeWeight:1, strokeOpacity:1, fillOpacity:0.3, strokeStyle:"dashed"});
+        map.addOverlay(circleAlarmPrecision);
+    }
+
     setTargetPosition();
+}
+
+
+
+//以下代码用于计算地球上两点间距离
+var EARTH_RADIUS = 6378137.0;    //单位M
+var PI = Math.PI;
+
+function getRad(d){
+    return d*PI/180.0;
+}
+
+/**
+ * approx distance between two points on earth ellipsoid
+ * @param {Object} lat1
+ * @param {Object} lng1
+ * @param {Object} lat2
+ * @param {Object} lng2
+ */
+function getDistance(lng1,lat1,lng2,lat2){
+    var f = getRad((lat1 + lat2)/2);
+    var g = getRad((lat1 - lat2)/2);
+    var l = getRad((lng1 - lng2)/2);
+
+    var sg = Math.sin(g);
+    var sl = Math.sin(l);
+    var sf = Math.sin(f);
+
+    var s,c,w,r,d,h1,h2;
+    var a = EARTH_RADIUS;
+    var fl = 1/298.257;
+
+    sg = sg*sg;
+    sl = sl*sl;
+    sf = sf*sf;
+
+    s = sg*(1-sl) + (1-sf)*sl;
+    c = (1-sg)*(1-sl) + sf*sl;
+
+    w = Math.atan(Math.sqrt(s/c));
+    r = Math.sqrt(s*c)/w;
+    d = 2*w*a;
+    h1 = (3*r -1)/2/c;
+    h2 = (3*r +1)/2/s;
+
+    return d*(1 + fl*(h1*sf*(1-sg) - h2*(1-sf)*sg));
 }
 </script>
 </head>

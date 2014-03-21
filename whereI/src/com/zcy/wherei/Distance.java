@@ -5,15 +5,15 @@ public class Distance {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
+//	public static void main(String[] args) {
 //		double lat1 = 43.79832744677656;
 //		double lng1 = 87.55322456359863;
 //		double lat2 = 43.794765163184934;
 //		double lng2 = 87.54328318786621;
 //		
-//		double r = Distance.GetDistance(lat1, lng1, lat2, lng2);
+//		double r = Distance.GetDistance(new Point(lat1, lng1), new Point(lat2, lng2));
 //		System.out.println(r);
-	}
+//	}
 	private static double EARTH_RADIUS = 6378137;//地球半径
 	private static double rad(double d)
 	{

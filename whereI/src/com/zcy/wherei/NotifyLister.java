@@ -1,5 +1,6 @@
 package com.zcy.wherei;
 import android.os.Vibrator;
+import android.util.Log;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDNotifyListener;

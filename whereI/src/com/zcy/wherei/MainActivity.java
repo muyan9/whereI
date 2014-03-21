@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Vibrator;
@@ -15,6 +16,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -35,9 +37,11 @@ public class MainActivity extends Activity {
 	private Button btnStart;
 	private Button btnAlarm;
 	private boolean bFlagStarted = false;
-	private NotifyLister notify = new NotifyLister();
+//	private NotifyLister notify = new NotifyLister();
 	private boolean bFlagNotify = true;
 	private boolean bFlagVibrate = false;
+	
+	Timer timer = new Timer();
 
 	private void initLocationClient() {
 		mLocationClient = new LocationClient(getApplicationContext()); // 声明LocationClient类
@@ -65,7 +69,7 @@ public class MainActivity extends Activity {
 	private void initMapView() {
 		webview = (WebView) findViewById(R.id.webView1);
 		webview.getSettings().setJavaScriptEnabled(true);
-		webview.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+		webview.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
 		webview.loadUrl("http://115.29.138.66/map.html");
 		webview.addJavascriptInterface(new JavaScriptInterface(this), "test");
 	}
@@ -83,25 +87,33 @@ public class MainActivity extends Activity {
 		webview.reload();
 	}
 
-	public void zhendong() {
+	public void vibratorStart() {
 		long l[] = new long[20];
 		for (int i = 0; i < 20; i++) {
 			l[i] = 1000;
 		}
-		if(!bFlagVibrate){
+		if(bFlagNotify && !bFlagVibrate){
 			Vibrator vib = (Vibrator) this.getSystemService(Service.VIBRATOR_SERVICE);
 			vib.vibrate(l, -1);
 			bFlagVibrate = true;
-			Log.w("zhendong", "kaishi");
 		}
 	}
 
-	public void vibCancle(View view) {
+	public void vibratorCancle(View view) {
 		if(bFlagVibrate){
 			Vibrator vib = (Vibrator) this.getSystemService(Service.VIBRATOR_SERVICE);
 			vib.cancel();
 			bFlagVibrate = false;
-			Log.w("zhendong", "tingzhi");
+		}
+	}
+	
+	private void vibratorState() {
+		bFlagNotify = !bFlagNotify;
+		if (!bFlagNotify) {
+			vibratorCancle(null);
+			btnAlarm.setText("允许震动");
+		} else {
+			btnAlarm.setText("取消震动");
 		}
 	}
 
@@ -118,37 +130,26 @@ public class MainActivity extends Activity {
 		Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
 		startActivityForResult(intent, 0); // 此为设置完成后返回到获取界面
 	}
-	
-	private void zhendongState() {
-		Log.w("zhendongState", "run");
-		bFlagNotify = !bFlagNotify;
-		if (!bFlagNotify) {
-			vibCancle(null);
-			btnAlarm.setText("允许震动");
-		} else {
-			btnAlarm.setText("取消震动");
-		}
-		
-		Log.w("bFlagNotify", String.valueOf(bFlagNotify));
-		Log.w("bFlagStarted", String.valueOf(bFlagStarted));
-	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		int height = getWindowManager().getDefaultDisplay().getHeight();
+		int width = getWindowManager().getDefaultDisplay().getWidth();
+		
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
+		
 		initLocationClient();
 		setLocationClientOption();
 
 		initMapView();
-
-		// FIXME 点击在地图上定位按钮，上次定位的标记仍然存在
-		// FIXME 在未定位准确的情况下，点击开始按钮，开始震动
-		// TODO 学习javadoc
+		
+		//TODO 所有 标志位提到一个类里
+		//TODO 学习javadoc
 //		this.openGPSSettings();
 		
-		notify.mVibrator01 = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
+//		notify.mVibrator01 = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
 
 		btnStart = (Button) findViewById(R.id.btnStart);
 
@@ -165,7 +166,7 @@ public class MainActivity extends Activity {
 					mLocationClient.stop();
 					bFlagStarted = false;
 					btnStart.setText("开始");
-					vibCancle(null);
+					vibratorCancle(null);
 				}
 			}
 		});
@@ -176,43 +177,45 @@ public class MainActivity extends Activity {
 		btnAlarm.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				zhendongState();
+				vibratorState();
 			}
 		});
 		
-		Timer timer = new Timer();
+		
 		TimerTask timerTask = new TimerTask() {
 			@Override
 			public void run() {
+//				Log.w("timer bFlagStarted", String.valueOf(bFlagStarted));
+//				Log.w("timer bFlagNotify", String.valueOf(bFlagNotify));
+//				Log.w("timer bFlagVibrate", String.valueOf(bFlagVibrate));
 				if(bFlagStarted){
-//					marker(null);
-					TextView tvLat = (TextView)findViewById(R.id.editLat);
-					TextView tvLng = (TextView)findViewById(R.id.editLng);
+//					TextView tvLat = (TextView)findViewById(R.id.editLat);
+//					TextView tvLng = (TextView)findViewById(R.id.editLng);
 					TextView tv = (TextView)findViewById(R.id.editDistance);
 					int d = Integer.parseInt(tv.getText().toString().trim());
 					if(Position.lat!=0 && Position.lng!=0){
 						Point curPoint = new Point(Position.lat, Position.lng);
 						Point toPoint = new Point(Position.latTarget, Position.lngTarget);
-						Log.w("distance", String.valueOf(Distance.GetDistance(curPoint, toPoint)));
-						if(Distance.GetDistance(curPoint, toPoint)<d)
-							if(bFlagNotify && bFlagStarted)
-								zhendong();
-						else{
-							vibCancle(null);
+						//TODO 写入页面提示
+//						Log.w("distance", String.valueOf(Distance.GetDistance(curPoint, toPoint)));
+						
+						if(Distance.GetDistance(curPoint, toPoint)<d && bFlagNotify && bFlagStarted){
+							vibratorStart();
+						}else{
+							vibratorCancle(null);
 						}
 					}
 				}
 			}
 		};
-		
 		timer.schedule(timerTask, 0, 5000);
 	}
 
 	@Override
 	public void onDestroy() {
 		mLocationClient.stop();
-		Log.w("destroy", "oo");
-		vibCancle(null);
+		vibratorCancle(null);
+		timer.cancel();
 		super.onDestroy();
 	}
 
@@ -221,5 +224,9 @@ public class MainActivity extends Activity {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
+	}
+	
+	public void onConfigurationChanged(Configuration newConfig) {
+	    super.onConfigurationChanged(newConfig);
 	}
 }
