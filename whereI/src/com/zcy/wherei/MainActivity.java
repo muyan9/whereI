@@ -39,7 +39,6 @@ public class MainActivity extends Activity {
 	private boolean bFlagStarted = false;
 //	private NotifyLister notify = new NotifyLister();
 	private boolean bFlagNotify = true;
-	private boolean bFlagVibrate = false;
 	
 	Timer timer = new Timer();
 
@@ -69,7 +68,7 @@ public class MainActivity extends Activity {
 	private void initMapView() {
 		webview = (WebView) findViewById(R.id.webView1);
 		webview.getSettings().setJavaScriptEnabled(true);
-		webview.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+		webview.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
 		webview.loadUrl("http://115.29.138.66/map.html");
 		webview.addJavascriptInterface(new JavaScriptInterface(this), "test");
 	}
@@ -92,19 +91,15 @@ public class MainActivity extends Activity {
 		for (int i = 0; i < 20; i++) {
 			l[i] = 1000;
 		}
-		if(bFlagNotify && !bFlagVibrate){
+		if(bFlagNotify){
 			Vibrator vib = (Vibrator) this.getSystemService(Service.VIBRATOR_SERVICE);
 			vib.vibrate(l, -1);
-			bFlagVibrate = true;
 		}
 	}
 
 	public void vibratorCancle(View view) {
-		if(bFlagVibrate){
-			Vibrator vib = (Vibrator) this.getSystemService(Service.VIBRATOR_SERVICE);
-			vib.cancel();
-			bFlagVibrate = false;
-		}
+		Vibrator vib = (Vibrator) this.getSystemService(Service.VIBRATOR_SERVICE);
+		vib.cancel();
 	}
 	
 	private void vibratorState() {
@@ -133,8 +128,31 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		int height = getWindowManager().getDefaultDisplay().getHeight();
-		int width = getWindowManager().getDefaultDisplay().getWidth();
+//		int height = getWindowManager().getDefaultDisplay().getHeight();
+//		int width = getWindowManager().getDefaultDisplay().getWidth();
+		
+		Intent startServiceIntent = new Intent("com.zcy.wherei.PositionService");
+        Bundle bundle = new Bundle();
+        bundle.putString("param", "oper1");
+        startServiceIntent.putExtras(bundle);
+        startService(startServiceIntent);
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		super.onCreate(savedInstanceState);
@@ -185,9 +203,8 @@ public class MainActivity extends Activity {
 		TimerTask timerTask = new TimerTask() {
 			@Override
 			public void run() {
-//				Log.w("timer bFlagStarted", String.valueOf(bFlagStarted));
-//				Log.w("timer bFlagNotify", String.valueOf(bFlagNotify));
-//				Log.w("timer bFlagVibrate", String.valueOf(bFlagVibrate));
+				Log.w("timer bFlagStarted", String.valueOf(bFlagStarted));
+				Log.w("timer bFlagNotify", String.valueOf(bFlagNotify));
 				if(bFlagStarted){
 //					TextView tvLat = (TextView)findViewById(R.id.editLat);
 //					TextView tvLng = (TextView)findViewById(R.id.editLng);

@@ -69,8 +69,6 @@
             android:ems="10"
             android:inputType="numberDecimal"
             android:text="126.518262" >
-
-            <requestFocus />
         </EditText>
 
         <EditText
